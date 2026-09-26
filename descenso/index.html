@@ -13,86 +13,119 @@ const rockGeo=new THREE.DodecahedronGeometry(1,0),fishGeo=new THREE.ConeGeometry
 function makeChunk(cx,cz){const group=new THREE.Group(),positions=[],colors=[],indices=[],col=new THREE.Color();for(let j=0;j<=GRID;j++)for(let i=0;i<=GRID;i++){let x=cx*CHUNK+i*CHUNK/GRID,z=cz*CHUNK+j*CHUNK/GRID,y=height(x,z);positions.push(x,y,z);let d=clamp((-y-42)/100,0,1),v=noise(x/13,z/13);col.setRGB(.13+v*.1-d*.05,.34+v*.1-d*.09,.34+v*.08-d*.05);colors.push(col.r,col.g,col.b)}for(let j=0;j<GRID;j++)for(let i=0;i<GRID;i++){let a=j*(GRID+1)+i,b=a+GRID+1;indices.push(a,b,a+1,b,b+1,a+1)}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();group.add(new THREE.Mesh(geo,groundMat));const dummy=new THREE.Object3D(),rocks=new THREE.InstancedMesh(rockGeo,rockMat,35),kelps=new THREE.InstancedMesh(kelpGeo,kelpMat,90);for(let i=0;i<35;i++){let x=(cx+hash(cx*341+i,cz*79))*CHUNK,z=(cz+hash(cx*73,cz*131+i))*CHUNK,y=height(x,z),s=1+hash(i+cx,cz)*2;dummy.position.set(x,y+s*.4,z);dummy.rotation.set(0,hash(i,cz)*6,0);dummy.scale.set(s*1.4,s*.55,s);dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix)}rocks.instanceMatrix.needsUpdate=true;group.add(rocks);for(let i=0;i<90;i++){let x=(cx+hash(cx*137+i,cz*53))*CHUNK,z=(cz+hash(cx*53,cz*91+i))*CHUNK,y=height(x,z),h=2+hash(i+cx*7,cz)*9;dummy.position.set(x,y+h*.5,z);dummy.rotation.set(0,hash(i,cz)*6,0);dummy.scale.set(.5+hash(i,cz)*.9,h,1);dummy.updateMatrix();kelps.setMatrixAt(i,dummy.matrix)}kelps.instanceMatrix.needsUpdate=true;group.add(kelps);scene.add(group);return{group,geo,rocks,kelps}}
 function updateChunks(){let cx=Math.floor(p.x/CHUNK),cz=Math.floor(p.z/CHUNK);for(let dz=-RADIUS;dz<=RADIUS;dz++)for(let dx=-RADIUS;dx<=RADIUS;dx++){let x=cx+dx,z=cz+dz,key=x+','+z;if(!chunks.has(key))chunks.set(key,makeChunk(x,z))}for(const[key,c]of chunks){let[x,z]=key.split(',').map(Number);if(Math.abs(x-cx)>RADIUS||Math.abs(z-cz)>RADIUS){scene.remove(c.group);c.geo.dispose();c.rocks.dispose();c.kelps.dispose();chunks.delete(key)}}}
 diver=new THREE.Group();
-const neoprene=new THREE.MeshStandardMaterial({color:0x10191e,roughness:.86}),
-      turquoise=new THREE.MeshStandardMaterial({color:0x16aeb2,roughness:.62}),
-      turquoiseDark=new THREE.MeshStandardMaterial({color:0x087c88,roughness:.72}),
-      glass=new THREE.MeshStandardMaterial({color:0x8bdcda,metalness:.32,roughness:.12,transparent:true,opacity:.8}),
-      rubber=new THREE.MeshStandardMaterial({color:0x051117,roughness:.9}),
-      skin=new THREE.MeshStandardMaterial({color:0xb78870,roughness:.85});
-// A long, narrow silhouette, seen mainly from behind by the following camera.
-// Smooth tapered body: shoulders, athletic waist and hips flow into one form.
-const rings=[[-.95,.31,.29],[-.68,.43,.32],[-.27,.45,.31],[.22,.33,.28],[.66,.36,.27],[.91,.27,.23]],
-      sides=16,verts=[],faces=[];
-for(const[z,rx,ry]of rings)for(let j=0;j<sides;j++){
- const a=j*Math.PI*2/sides;verts.push(Math.cos(a)*rx,Math.sin(a)*ry,z);
+const neoprene=new THREE.MeshPhysicalMaterial({color:0x0b1419,roughness:.83,metalness:0,clearcoat:.12,clearcoatRoughness:.7}),
+ turquoise=new THREE.MeshPhysicalMaterial({color:0x079da5,roughness:.57,clearcoat:.27,clearcoatRoughness:.44}),
+ seamMat=new THREE.MeshStandardMaterial({color:0x38c8c7,roughness:.68}),
+ rubber=new THREE.MeshStandardMaterial({color:0x071015,roughness:.92}),
+ glass=new THREE.MeshPhysicalMaterial({color:0x86bac0,metalness:.18,roughness:.13,transparent:true,opacity:.76,side:THREE.DoubleSide}),
+ skin=new THREE.MeshStandardMaterial({color:0xb38872,roughness:.9});
+function ellipsoid(parent,material,x,y,z,sx,sy,sz,segments=32){
+ const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,segments,Math.max(16,segments/2)),material);
+ mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);parent.add(mesh);return mesh;
 }
-for(let i=0;i<rings.length-1;i++)for(let j=0;j<sides;j++){
- const a=i*sides+j,b=i*sides+(j+1)%sides,c=(i+1)*sides+j,d=(i+1)*sides+(j+1)%sides;
- faces.push(a,b,c,b,d,c);
+// A smooth anatomical loft with separate shoulder, chest, waist and pelvis contours.
+function loft(parent,profile,material){
+ const sides=32,steps=(profile.length-1)*5,positions=[],indices=[];
+ function curve(k,t){
+  const i=Math.min(profile.length-2,Math.floor(t)),u=t-i;
+  const a=profile[Math.max(0,i-1)][k],b=profile[i][k],c=profile[i+1][k],d=profile[Math.min(profile.length-1,i+2)][k];
+  return .5*((2*b)+(-a+c)*u+(2*a-5*b+4*c-d)*u*u+(-a+3*b-3*c+d)*u*u*u);
+ }
+ for(let row=0;row<=steps;row++){
+  const t=row/5;
+  for(let j=0;j<sides;j++){
+   const angle=j*2*Math.PI/sides,rx=curve(3,t),ry=curve(4,t);
+   positions.push(curve(0,t)+Math.cos(angle)*rx,curve(1,t)+Math.sin(angle)*ry,curve(2,t));
+  }
+ }
+ for(let row=0;row<steps;row++)for(let j=0;j<sides;j++){
+  const a=row*sides+j,b=row*sides+(j+1)%sides,c=(row+1)*sides+j,d=(row+1)*sides+(j+1)%sides;
+  indices.push(a,b,c,b,d,c);
+ }
+ const g=new THREE.BufferGeometry();
+ g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();
+ const m=new THREE.Mesh(g,material);parent.add(m);return m;
 }
-const torsoGeo=new THREE.BufferGeometry();
-torsoGeo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
-torsoGeo.setIndex(faces);torsoGeo.computeVertexNormals();
-diver.add(new THREE.Mesh(torsoGeo,neoprene));
-// Turquoise seams arc across the back and meet at the waist.
-for(const side of [-1,1]){
- const seamCurve=new THREE.CatmullRomCurve3([
-  new THREE.Vector3(side*.37,.16,-.68),new THREE.Vector3(side*.35,.25,-.24),
-  new THREE.Vector3(side*.22,.26,.12),new THREE.Vector3(side*.12,.26,.57)
- ]);
- diver.add(new THREE.Mesh(new THREE.TubeGeometry(seamCurve,28,.052,6,false),turquoise));
-}
-const backMark=new THREE.Mesh(new THREE.SphereGeometry(.115,10,8),turquoise);
-backMark.scale.set(1,.35,1.4);backMark.position.set(0,.32,.55);diver.add(backMark);
-const hood=new THREE.Mesh(new THREE.SphereGeometry(.48,14,10),neoprene);
-hood.position.set(0,0,-1.24);diver.add(hood);
-const face=new THREE.Mesh(new THREE.SphereGeometry(.33,12,8),skin);
-face.scale.set(1,.62,.42);face.position.set(0,-.025,-1.66);diver.add(face);
-const maskFrame=new THREE.Mesh(new THREE.BoxGeometry(.72,.32,.18),rubber);
-maskFrame.position.set(0,.11,-1.69);diver.add(maskFrame);
-const lenses=new THREE.Mesh(new THREE.BoxGeometry(.6,.23,.06),glass);
-lenses.position.set(0,.12,-1.8);diver.add(lenses);
-const strap=new THREE.Mesh(new THREE.BoxGeometry(.9,.105,.18),turquoiseDark);
-strap.position.set(0,.14,-1.25);diver.add(strap);
-// Snorkel follows the right side of the black hood and rises above it.
-const tubeCurve=new THREE.CatmullRomCurve3([
- new THREE.Vector3(.42,-.13,-1.75),new THREE.Vector3(.58,.02,-1.65),
- new THREE.Vector3(.56,.36,-1.42),new THREE.Vector3(.52,.72,-1.36)
+loft(diver,[
+ [0,0,-1.03,.22,.23],[0,0,-.83,.35,.28],[0,0,-.61,.46,.31],
+ [0,0,-.28,.45,.31],[0,0,.12,.36,.27],[0,0,.42,.31,.25],
+ [0,0,.65,.36,.26],[0,0,.88,.29,.24],[0,0,.98,.23,.21]
+],neoprene);
+// Black hood, neck seal, subtle exposed lower face and a curved panoramic mask.
+ellipsoid(diver,neoprene,0,.01,-1.26,.40,.41,.50,48);
+ellipsoid(diver,skin,0,-.085,-1.57,.285,.24,.23,40);
+ellipsoid(diver,rubber,0,.095,-1.64,.375,.245,.20,48);
+ellipsoid(diver,glass,0,.12,-1.76,.322,.192,.087,48);
+const strapCurve=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(-.35,.15,-1.58),new THREE.Vector3(-.39,.27,-1.31),
+ new THREE.Vector3(0,.36,-1.2),new THREE.Vector3(.39,.27,-1.31),
+ new THREE.Vector3(.35,.15,-1.58)
 ]);
-const snorkel=new THREE.Mesh(new THREE.TubeGeometry(tubeCurve,20,.065,7,false),turquoise);
-diver.add(snorkel);
-const snorkelTip=new THREE.Mesh(new THREE.CylinderGeometry(.085,.085,.13,8),rubber);
-snorkelTip.position.set(.52,.76,-1.36);diver.add(snorkelTip);
+diver.add(new THREE.Mesh(new THREE.TubeGeometry(strapCurve,48,.045,10,false),turquoise));
+const snorkelPath=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(.37,-.12,-1.75),new THREE.Vector3(.49,-.02,-1.57),
+ new THREE.Vector3(.52,.28,-1.36),new THREE.Vector3(.49,.72,-1.31)
+]);
+diver.add(new THREE.Mesh(new THREE.TubeGeometry(snorkelPath,40,.052,12,false),turquoise));
+ellipsoid(diver,rubber,.49,.76,-1.31,.083,.045,.083,20);
+// Curved inlaid colour, following the shoulders and tapering down the spine.
 for(const side of [-1,1]){
- const shoulder=new THREE.Mesh(new THREE.SphereGeometry(.21,10,8),neoprene);
- shoulder.position.set(side*.46,-.03,-.55);diver.add(shoulder);
- const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.135,.48,5,9),neoprene);
- upper.rotation.x=Math.PI/2;upper.position.set(side*.52,-.13,-.25);diver.add(upper);
- const forearm=new THREE.Mesh(new THREE.CapsuleGeometry(.12,.5,5,9),neoprene);
- forearm.rotation.x=Math.PI/2;forearm.position.set(side*.57,-.2,.25);diver.add(forearm);
- const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.13,10),turquoise);
- cuff.rotation.x=Math.PI/2;cuff.position.set(side*.57,-.2,.56);diver.add(cuff);
- const glove=new THREE.Mesh(new THREE.SphereGeometry(.15,10,8),neoprene);
- glove.position.set(side*.57,-.2,.68);diver.add(glove);
+ const line=new THREE.CatmullRomCurve3([
+  new THREE.Vector3(side*.36,.13,-.7),new THREE.Vector3(side*.36,.23,-.35),
+  new THREE.Vector3(side*.28,.26,0),new THREE.Vector3(side*.12,.245,.49)
+ ]);
+ diver.add(new THREE.Mesh(new THREE.TubeGeometry(line,36,.062,10,false),turquoise));
+ const trim=new THREE.CatmullRomCurve3([
+  new THREE.Vector3(side*.36,-.12,-.66),new THREE.Vector3(side*.39,-.18,-.25),
+  new THREE.Vector3(side*.31,-.2,.24)
+ ]);
+ diver.add(new THREE.Mesh(new THREE.TubeGeometry(trim,24,.023,8,false),seamMat));
+}
+ellipsoid(diver,turquoise,0,.252,.62,.13,.035,.20,24);
+// Slim articulated arms with natural bends and integrated gloves.
+for(const side of [-1,1]){
+ ellipsoid(diver,neoprene,side*.45,-.06,-.59,.19,.2,.23,32);
+ loft(diver,[
+  [side*.47,-.09,-.57,.16,.16],[side*.53,-.15,-.31,.145,.14],
+  [side*.58,-.19,-.04,.125,.12],[side*.61,-.22,.14,.13,.13],
+  [side*.6,-.25,.43,.11,.115],[side*.57,-.25,.61,.12,.12]
+ ],neoprene);
+ ellipsoid(diver,turquoise,side*.58,-.25,.55,.13,.13,.075,24);
+ ellipsoid(diver,neoprene,side*.56,-.26,.7,.13,.10,.19,24);
 }
 finL=new THREE.Group();finR=new THREE.Group();
 for(const[side,g]of [[-1,finL],[1,finR]]){
- g.position.set(side*.24,-.18,.72);
- const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.155,1.2,4,8),neoprene);
- leg.rotation.x=Math.PI/2;leg.position.z=.6;g.add(leg);
- const stripe=new THREE.Mesh(new THREE.BoxGeometry(.085,.045,.85),turquoise);
- stripe.position.set(side*.14,.13,.62);g.add(stripe);
- const boot=new THREE.Mesh(new THREE.BoxGeometry(.31,.22,.55),neoprene);
- boot.position.z=1.35;g.add(boot);
- const bladeShape=new THREE.Shape();
- bladeShape.moveTo(-.18,0);bladeShape.lineTo(.18,0);
- bladeShape.lineTo(.34,1.5);bladeShape.quadraticCurveTo(0,1.7,-.34,1.5);
- bladeShape.closePath();
- const blade=new THREE.Mesh(new THREE.ShapeGeometry(bladeShape),turquoiseDark);
- blade.rotation.x=Math.PI/2;blade.position.set(0,-.11,1.5);g.add(blade);
- const rail=new THREE.Mesh(new THREE.BoxGeometry(.075,.065,1.35),turquoise);
- rail.position.set(0,-.07,2.22);g.add(rail);
- diver.add(g);
+ g.position.set(side*.23,-.08,.78);
+ loft(g,[
+  [0,0,0,.19,.18],[side*.015,-.07,.35,.17,.17],
+  [side*.035,-.1,.78,.145,.14],[side*.055,-.13,1.13,.135,.13],
+  [side*.05,-.12,1.42,.155,.13]
+ ],neoprene);
+ const stripe=new THREE.CatmullRomCurve3([
+  new THREE.Vector3(side*.15,.07,.13),new THREE.Vector3(side*.17,.03,.53),
+  new THREE.Vector3(side*.16,0,1.03)
+ ]);
+ g.add(new THREE.Mesh(new THREE.TubeGeometry(stripe,22,.032,8,false),turquoise));
+ ellipsoid(g,neoprene,side*.05,-.12,1.45,.20,.145,.34,32);
+ // Long tapered fin with a rounded tip and a shallow hydrodynamic curve.
+ const stations=[[1.55,.17],[1.75,.22],[2.1,.34],[2.45,.43],[2.78,.42],[2.98,.28],[3.05,.07]],v=[],idx=[];
+ for(let k=0;k<stations.length;k++){
+  const[z,w]=stations[k],bend=-.11+.055*Math.sin((z-1.55)*2);
+  for(const s of [-1,0,1])v.push(s*w,bend+(1-Math.abs(s))*.08,z);
+ }
+ for(let k=0;k<stations.length-1;k++)for(let j=0;j<2;j++){
+  const a=k*3+j,b=a+3;idx.push(a,b,a+1,a+1,b,b+1);
+ }
+ const fg=new THREE.BufferGeometry();
+ fg.setAttribute('position',new THREE.Float32BufferAttribute(v,3));fg.setIndex(idx);fg.computeVertexNormals();
+ const finMaterial=turquoise.clone();finMaterial.side=THREE.DoubleSide;
+ g.add(new THREE.Mesh(fg,finMaterial));
+ for(const edge of [-1,1]){
+  const edgePath=new THREE.CatmullRomCurve3(stations.map(([z,w])=>new THREE.Vector3(edge*w,-.11+.055*Math.sin((z-1.55)*2),z)));
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(edgePath,32,.027,8,false),rubber));
+ }
+ const rib=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(stations.map(([z])=>new THREE.Vector3(0,-.03+.055*Math.sin((z-1.55)*2),z))),32,.028,8,false),seamMat);
+ g.add(rib);diver.add(g);
 }
 scene.add(diver);
 const fishGeo2=new THREE.ConeGeometry(.22,.9,3);fishGeo2.rotateX(Math.PI/2);for(let i=0;i<90;i++){let f=new THREE.Mesh(fishGeo2,fishMat);f.userData={i,phase:hash(i,1)*7};fish.push(f);scene.add(f)}for(let i=0;i<65;i++){let b=new THREE.Mesh(bubbleGeo,bubbleMat);b.userData={i,phase:hash(i,5)*60};bubbles.push(b);scene.add(b)}
@@ -103,5 +136,5 @@ let audio=null,audioEnabled=true;
 function startAudio(){if(audio)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;try{const ac=new AC(),master=ac.createGain(),filter=ac.createBiquadFilter(),noiseGain=ac.createGain();master.gain.value=.16;master.connect(ac.destination);filter.type='lowpass';filter.frequency.value=330;filter.connect(noiseGain).connect(master);const buf=ac.createBuffer(1,ac.sampleRate*3,ac.sampleRate),data=buf.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;const src=ac.createBufferSource();src.buffer=buf;src.loop=true;src.connect(filter);src.start();const tones=[55,82.41,110].map((pitch,i)=>{let osc=ac.createOscillator(),gain=ac.createGain();osc.type=i===1?'sine':'triangle';osc.frequency.value=pitch;gain.gain.value=i===0?.055:.018;osc.connect(gain).connect(master);osc.start();return{osc,gain}});audio={ac,master,filter,noiseGain,tones};ac.resume().catch(()=>{})}catch(e){audio=null}}
 document.querySelector('#sound').onclick=()=>{audioEnabled=!audioEnabled;document.querySelector('#sound').textContent=audioEnabled?'SONIDO ♫':'SONIDO ×';if(audio)audio.master.gain.setTargetAtTime(audioEnabled?.16:0,audio.ac.currentTime,.2)};
 function reset(){seed=(Math.random()*4294967295)>>>0;for(const c of chunks.values()){scene.remove(c.group);c.geo.dispose();c.rocks.dispose();c.kelps.dispose()}chunks.clear();Object.assign(p,{x:0,y:-14,z:0,heading:0,speed:0,vy:0,turn:0});coords.textContent='MAR '+seed.toString(36).toUpperCase().slice(0,6);updateChunks()}document.querySelector('#newSea').onclick=reset;document.querySelector('#start').onclick=()=>{intro.classList.add('hidden');started=true;startAudio();last=performance.now();requestAnimationFrame(frame)};addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6))});
-function frame(now){let dt=Math.min(.045,(now-last)/1000||0);last=now;time+=dt;const drive=keys.has('forward')?1:0,turn=(keys.has('right')?1:0)-(keys.has('left')?1:0),lift=(keys.has('up')?1:0)-(keys.has('down')?1:0);p.speed+=(drive*14-p.speed)*Math.min(1,dt*1.3);p.turn+=(turn*1.4-p.turn)*Math.min(1,dt*2.2);p.vy+=(lift*8-p.vy)*Math.min(1,dt*1.5);p.heading+=p.turn*dt;p.x-=Math.sin(p.heading)*p.speed*dt;p.z-=Math.cos(p.heading)*p.speed*dt;p.y=clamp(p.y+p.vy*dt,Math.max(height(p.x,p.z)+3,-300),-3);if(p.y===-3)p.vy=Math.min(0,p.vy);updateChunks();diver.position.set(p.x,p.y+Math.sin(time*1.4)*.1,p.z);diver.rotation.y=p.heading;diver.rotation.z=-p.turn*.12;finL.rotation.x=Math.sin(time*(2+p.speed*.32))*.27;finR.rotation.x=-finL.rotation.x;diver.rotation.x=Math.sin(time*1.25)*.025;const behind=new THREE.Vector3(Math.sin(p.heading)*8,3-lookPitch*9,Math.cos(p.heading)*8);camera.position.lerp(new THREE.Vector3(p.x+behind.x,p.y+behind.y,p.z+behind.z),Math.min(1,dt*2.2));camera.lookAt(p.x,p.y-lookPitch*4,p.z);light.position.copy(diver.position);particles.position.set(p.x,p.y,p.z);let depth=-p.y,shade=clamp(depth/230,0,1);scene.background.setRGB(lerp(.06,.013,shade),lerp(.25,.065,shade),lerp(.32,.12,shade));scene.fog.color.copy(scene.background);scene.fog.density=.011+shade*.007;depthEl.textContent=Math.round(depth)+' M';if(audio){let at=audio.ac.currentTime;audio.filter.frequency.setTargetAtTime(330-depth*.55,at,.5);audio.noiseGain.gain.setTargetAtTime(.14+Math.abs(p.speed)*.015,at,.4);audio.tones[0].osc.frequency.setTargetAtTime(55-depth*.025,at,2)}for(const f of fish){let i=f.userData.i,angle=hash(i,44)*6.283,rad=20+hash(i,45)*68,fx=p.x+Math.cos(angle)*rad+Math.sin(time*.3+i)*9,fz=p.z+Math.sin(angle)*rad+Math.cos(time*.22+i)*9,fy=Math.min(-8,height(fx,fz)+10+hash(i,48)*25);f.position.set(fx,fy+Math.sin(time*1.2+i)*.7,fz);f.rotation.y=angle+Math.PI/2}for(const b of bubbles){let i=b.userData.i,age=(time*2+ b.userData.phase)%60;b.position.set(p.x+Math.sin(i*71)*3+Math.sin(time+i)*.2,p.y+1+age,p.z+Math.cos(i*37)*3);if(b.position.y>0)b.position.y=p.y-40+(age%40)}renderer.render(scene,camera);requestAnimationFrame(frame)}updateChunks();renderer.render(scene,camera);
+function frame(now){let dt=Math.min(.045,(now-last)/1000||0);last=now;time+=dt;const drive=keys.has('forward')?1:0,turn=(keys.has('right')?1:0)-(keys.has('left')?1:0),lift=(keys.has('up')?1:0)-(keys.has('down')?1:0);p.speed+=(drive*14-p.speed)*Math.min(1,dt*1.3);p.turn+=(turn*1.4-p.turn)*Math.min(1,dt*2.2);p.vy+=(lift*8-p.vy)*Math.min(1,dt*1.5);p.heading+=p.turn*dt;p.x-=Math.sin(p.heading)*p.speed*dt;p.z-=Math.cos(p.heading)*p.speed*dt;p.y=clamp(p.y+p.vy*dt,Math.max(height(p.x,p.z)+3,-300),-3);if(p.y===-3)p.vy=Math.min(0,p.vy);updateChunks();diver.position.set(p.x,p.y+Math.sin(time*1.4)*.1,p.z);diver.rotation.y=p.heading;diver.rotation.z=-p.turn*.12;finL.rotation.x=Math.sin(time*(2+p.speed*.32))*.27;finR.rotation.x=-finL.rotation.x;diver.rotation.x=Math.sin(time*1.25)*.025;const behind=new THREE.Vector3(Math.sin(p.heading)*6.2,2.6-lookPitch*8,Math.cos(p.heading)*6.2);camera.position.lerp(new THREE.Vector3(p.x+behind.x,p.y+behind.y,p.z+behind.z),Math.min(1,dt*2.2));camera.lookAt(p.x,p.y-lookPitch*4,p.z);light.position.copy(diver.position);particles.position.set(p.x,p.y,p.z);let depth=-p.y,shade=clamp(depth/230,0,1);scene.background.setRGB(lerp(.06,.013,shade),lerp(.25,.065,shade),lerp(.32,.12,shade));scene.fog.color.copy(scene.background);scene.fog.density=.011+shade*.007;depthEl.textContent=Math.round(depth)+' M';if(audio){let at=audio.ac.currentTime;audio.filter.frequency.setTargetAtTime(330-depth*.55,at,.5);audio.noiseGain.gain.setTargetAtTime(.14+Math.abs(p.speed)*.015,at,.4);audio.tones[0].osc.frequency.setTargetAtTime(55-depth*.025,at,2)}for(const f of fish){let i=f.userData.i,angle=hash(i,44)*6.283,rad=20+hash(i,45)*68,fx=p.x+Math.cos(angle)*rad+Math.sin(time*.3+i)*9,fz=p.z+Math.sin(angle)*rad+Math.cos(time*.22+i)*9,fy=Math.min(-8,height(fx,fz)+10+hash(i,48)*25);f.position.set(fx,fy+Math.sin(time*1.2+i)*.7,fz);f.rotation.y=angle+Math.PI/2}for(const b of bubbles){let i=b.userData.i,age=(time*2+ b.userData.phase)%60;b.position.set(p.x+Math.sin(i*71)*3+Math.sin(time+i)*.2,p.y+1+age,p.z+Math.cos(i*37)*3);if(b.position.y>0)b.position.y=p.y-40+(age%40)}renderer.render(scene,camera);requestAnimationFrame(frame)}updateChunks();renderer.render(scene,camera);
 </script></body></html>
