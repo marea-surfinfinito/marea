@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./marea-icon.svg">
   <meta name="description" content="MAREA — juego de surf creado por nachommmartinez.">
   <title>MAREA — surf infinito</title>
-  <link rel="stylesheet" href="./style.css?v=14">
+  <link rel="stylesheet" href="./style.css?v=15">
 </head>
 <body>
   <main id="game" aria-label="MAREA, juego de surf creado por nachommmartinez">
@@ -36,7 +36,7 @@
           <button type="button" data-board="3" aria-pressed="false" aria-label="Tabla violeta"><span class="board-swatch" style="--board:#a68be8"></span><span>VIOLETA</span></button>
         </div>
         <p>Toca un pájaro blanco al saltar: +1000 puntos.<br>En la gran ola, aterriza un backflip para ganar +1000 y velocidad.</p>
-        <span class="small">Gira el móvil para pantalla completa. Si aparece «PANTALLA COMPLETA», tócalo y entra al agua.</span>
+        <span class="small">Juega en vertical. Al girar el móvil, se intentará abrir en pantalla completa.</span>
         <button id="startButton" type="button">ENTRAR AL AGUA</button>
       </div>
     </div>
@@ -57,11 +57,10 @@
     <button id="fullscreenButton" class="fullscreen-button hidden" type="button" aria-label="Activar pantalla completa">⛶ PANTALLA COMPLETA</button>
     <button id="soundButton" class="sound" type="button" aria-label="Silenciar música">♫</button>
     <div id="fullscreenTip" class="fullscreen-tip hidden" role="status"></div>
-    <div id="rotate" aria-hidden="true">Gira el móvil para jugar en pantalla completa ↻</div>
   </main>
   <audio id="music" src="./audio/marea_ambient.ogg" preload="auto" loop></audio>
   <audio id="musicNight" src="./audio/marea_noche.ogg" preload="auto" loop></audio>
   <audio id="musicStorm" src="./audio/marea_tormenta.ogg" preload="auto" loop></audio>
-  <script src="./game.js?v=36" defer></script>
+  <script src="./game.js?v=37" defer></script>
 </body>
 </html>
