@@ -28,3 +28,6 @@ html,body,#game{height:100dvh}#game:fullscreen,#game:-webkit-full-screen{width:1
 .instructions-panel strong{color:#baf0ce}
 .instructions-panel .instructions-extra{font-size:13px;color:#c9d9e2}
 .instructions-panel #playButton{display:block;margin:23px auto 0}
+
+.score-form .score-save-status{min-height:1.2em;margin:6px 0 0;color:#ffd5df;font:12px/1.35 Arial,sans-serif;letter-spacing:0}
+.score-saved-message{margin:8px 0;color:#baf0ce;font:bold 12px/1.4 monospace;letter-spacing:.08em}
