@@ -91,8 +91,8 @@ function slopeAt(x){return (surfaceY(x+18)-surfaceY(x-18))/36}
 function jump(){const slope=slopeAt(X);s.airborne=true;s.airY=surfaceY(X);s.airV=-345-Math.min(105,Math.max(0,s.speed-300)*.38)-Math.max(0,-slope)*65;s.angle=Math.atan(slope)*.5;s.spin=0;s.landing=0}
 function hold(value){if(s.crashed)return;if(value&&!s.holding&&!s.airborne)jump();s.holding=value}
 function wipeout(reason='CAÍDA'){if(s.crashed)return;s.crashed=true;s.crashTime=0;s.holding=false;s.message=reason;s.messageTime=10;showGameOver()}
-function rockAt(i){return {position:2300+i*2800+seed(i+91)*1300,width:34+seed(i+31)*18,height:40+seed(i+47)*20}}
-function nearbyRocks(){const i=Math.max(0,Math.floor((s.world-2300)/2800)-1),rocks=[];for(let n=i;n<i+5;n++)rocks.push(rockAt(n));return rocks}
+function rockAt(i){return {position:5100+i*1900+seed(i+91)*500,width:34+seed(i+31)*18,height:40+seed(i+47)*20,requiredScore:i%3===0?100:i%3===1?500:1500}}
+function nearbyRocks(){const i=Math.max(0,Math.floor((s.world-5100)/1900)-1),rocks=[];for(let n=i;n<i+5;n++){const rock=rockAt(n);if(s.distance>=100&&s.score>=rock.requiredScore)rocks.push(rock)}return rocks}
 function birdAt(i){return {index:i,position:1200+i*2100+seed(i+211)*450}}
 function nearbyBirds(){const i=Math.max(0,Math.floor((s.world-1200)/2100)-1),birds=[];for(let n=i;n<i+4;n++)birds.push(birdAt(n));return birds}
 function birdY(x,i){return top(x)-91-7*Math.sin(s.clock*3+i*2.7)}
