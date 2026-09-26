@@ -91,8 +91,8 @@ function slopeAt(x){return (surfaceY(x+18)-surfaceY(x-18))/36}
 function jump(){const slope=slopeAt(X);s.airborne=true;s.airY=surfaceY(X);s.airV=-345-Math.min(105,Math.max(0,s.speed-300)*.38)-Math.max(0,-slope)*65;s.angle=Math.atan(slope)*.5;s.spin=0;s.landing=0}
 function hold(value){if(s.crashed)return;if(value&&!s.holding&&!s.airborne)jump();s.holding=value}
 function wipeout(reason='CAÍDA'){if(s.crashed)return;s.crashed=true;s.crashTime=0;s.holding=false;s.message=reason;s.messageTime=10;showGameOver()}
-function rockAt(i){return {position:5100+i*1900+seed(i+91)*500,width:34+seed(i+31)*18,height:40+seed(i+47)*20,requiredScore:i%3===0?100:i%3===1?500:1500}}
-function nearbyRocks(){const i=Math.max(0,Math.floor((s.world-5100)/1900)-1),rocks=[];for(let n=i;n<i+5;n++){const rock=rockAt(n);if(s.distance>=100&&s.score>=rock.requiredScore)rocks.push(rock)}return rocks}
+function rockAt(i){return {position:5100+i*3600+seed(i+91)*650,width:34+seed(i+31)*18,height:40+seed(i+47)*20,requiredScore:i%3===0?100:i%3===1?500:1500}}
+function nearbyRocks(){const i=Math.max(0,Math.floor((s.world-5100)/3600)-1),rocks=[];for(let n=i;n<i+5;n++){const rock=rockAt(n);if(s.distance>=100&&s.score>=rock.requiredScore)rocks.push(rock)}return rocks}
 function birdAt(i){return {index:i,position:1200+i*2100+seed(i+211)*450}}
 function nearbyBirds(){const i=Math.max(0,Math.floor((s.world-1200)/2100)-1),birds=[];for(let n=i;n<i+4;n++)birds.push(birdAt(n));return birds}
 function birdY(x,i){return top(x)-91-7*Math.sin(s.clock*3+i*2.7)}
@@ -161,8 +161,9 @@ function background(p){const gradient=ctx.createLinearGradient(0,0,0,450);gradie
  for(let i=0;i<2;i++){const cycle=(s.clock*.115+i*.53)%1;if(cycle>.54)continue;const t=cycle/.54,x=((i*761+260+s.clock*38-s.world*.055)%(W+240)+(W+240))%(W+240)-120,y=395-135*Math.sin(Math.PI*t)-i*26;ctx.globalAlpha=.82*(1-p.rain*.35);dolphin(x,y,.94+i*.14,(.5-t)*.65,p);ctx.globalAlpha=1}
  if(p.rain>.6&&((s.clock+2.3)%13.1)<.12){ctx.fillStyle=`rgba(210,235,255,${p.rain*.16})`;ctx.fillRect(0,0,W,H);line([[900,80],[869,151],[896,153],[849,236]],'#d8f6ff',4)}
  ctx.globalAlpha=.72*(1-p.calm);for(let i=0;i<7;i++){const x=((i*271-s.world*.22)%(W+170)+(W+170))%(W+170)-85,y=116+(i*41)%106+5*Math.sin(s.clock*1.6+i),z=.65+(i%3)*.19,flap=4*Math.sin(s.clock*4+x*.03);line([[x-17*z,y+(-5+flap)*z],[x-5*z,y+z],[x,y],[x+5*z,y+z],[x+17*z,y+(-5+flap)*z]],p.foam,2.6*z)}ctx.globalAlpha=1;
- for(let i=0;i<3;i++){const x=((i*670+105-s.world*.16)%(W+230)+(W+230))%(W+230)-115,z=1+(i%2)*.26;poly([[x-104*z,445],[x-75*z,427],[x-34*z,419],[x+15*z,422],[x+82*z,436],[x+108*z,457],[x+78*z,476],[x-90*z,473]],'#263c52');line([[x-75*z,427],[x-34*z,419],[x+15*z,422],[x+82*z,436]],'#647889',2);palm(x,424,z)}
- const horizon=[];for(let i=0;i<=64;i++){const x=i*20;horizon.push([x,408+5*Math.sin((x+s.world*.33)*.012)])}line(horizon,'#bd5a92',3)}
+ const distantSea=ctx.createLinearGradient(0,507,0,H);distantSea.addColorStop(0,rgb(p.water,p.low,.55));distantSea.addColorStop(1,rgb(p.water,p.deep,.58));ctx.fillStyle=distantSea;ctx.fillRect(0,507,W,H-507);
+ line([[0,507],[W,507]],rgb(p.foam,p.water,.55),2);for(let i=0;i<12;i++){const x=((i*147-s.world*.11)%(W+180)+(W+180))%(W+180)-90,y=518+(i%4)*19;ctx.globalAlpha=.24;line([[x,y],[x+25+(i%3)*16,y]],p.foam,1.7);ctx.globalAlpha=1}
+ for(let i=0;i<3;i++){const x=((i*670+105-s.world*.16)%(W+230)+(W+230))%(W+230)-115,z=1+(i%2)*.26;poly([[x-104*z,548],[x-75*z,530],[x-34*z,522],[x+15*z,525],[x+82*z,539],[x+108*z,560],[x+78*z,577],[x-90*z,574]],'#263c52');line([[x-75*z,530],[x-34*z,522],[x+15*z,525],[x+82*z,539]],'#647889',2);palm(x,527,z)}}
 function fish(x,y,z,night,kind=0){const colors=[['#a3e5df','#d0fff1'],['#edaf78','#fbd6a0'],['#ee92ae','#f9c6cf'],['#e4d281','#fff0af'],['#729dd3','#a2c9ed']],palette=colors[kind%colors.length],body=rgb(palette[0],palette[1],night*.55);
  if(night>.05){ctx.globalAlpha=night*.13;circle(x-3*z,y,17*z,body);ctx.globalAlpha=1}
  poly([[x-12*z,y],[x-20*z,y-7*z],[x-19*z,y+7*z]],rgb(body,'#4b7885',.28));
@@ -187,7 +188,8 @@ function wave(p){const crests=[],depths=[];for(let i=0;i<=64;i++){const x=i*20;c
  for(let i=0;i<36;i++){const x=((i*127-s.world*.82)%(W+90)+(W+90))%(W+90)-45,y=top(x)+8+(i%4)*3;ctx.globalAlpha=.35+(i%3)*.17;line([[x-16,y],[x-3,y-3],[x+10,y+1]],'#fff',1.8+(i%3)*.7);ctx.globalAlpha=1}
  if(p.rain)for(let i=0;i<54;i++){const x=((i*137-s.world*.69)%(W+90)+(W+90))%(W+90)-45,y=top(x)-5-(i*19)%32,drift=Math.sin(s.clock*2+i)*8;ctx.globalAlpha=p.rain*(.2+(i%4)*.12);circle(x+drift,y,1.5+(i%3)*1.2,p.foam);ctx.globalAlpha=1}
  for(let k=0;k<19;k++){const x=((k*191-s.world*(.68+(k%4)*.04))%(W+160)+(W+160))%(W+160)-80,f=.07+((k*17)%71)*.012,y=top(x)+depth(x)*f,w=28+(k*29)%63;ctx.globalAlpha=f>.5?.24:.43;poly([[x-w,y+4],[x-w*.35,y-4],[x+w*.24,y-2],[x+w,y+8],[x+w*.37,y+13]],k%3===0?p.pink:k%3===1?p.foam:p.water);ctx.globalAlpha=1}
- const first=Math.floor(s.world/1000)-1;for(let k=0;k<4;k++){const section=first+k,size=seed(section);if(size<.38)continue;const x=section*1000+500+140*(size-.5)-s.world;if(x<-185||x>W+185)continue;const y=top(x),reach=74+88*size,t=clamp((size-.38)/.62,0,1),curl=[[x-reach,y+11],[x-reach*.72,y-17-12*t],[x-36,y-31-16*t],[x+20,y-37-18*t],[x+69,y-16-9*t],[x+reach*.9,y+32],[x+reach*.63,y+34],[x+reach*.38,y+8],[x-17,y+16]];
+ const first=Math.floor(s.world/1000)-1;for(let k=0;k<4;k++){const section=first+k,size=seed(section);if(size<.38)continue;const x=section*1000+500+140*(size-.5)-s.world;if(x<-185||x>W+185)continue;const y=top(x),reach=74+88*size,t=clamp((size-.38)/.62,0,1),curl=[[x-reach,y+11],[x-reach*.72,y-17-12*t],[x-36,y-31-16*t],[x+20,y-37-18*t],[x+69,y-16-9*t]];
+  for(let j=8;j>=0;j--){const bx=x-reach+j*reach*2/8;curl.push([bx,top(bx)+18])}
   poly(curl,rgb(p.water,p.deep,.26));line(curl.slice(0,5),rgb(p.foam,'#faffff',.48),7+p.rain*2);
   line([[x-reach*.72,y-17-12*t],[x-36,y-31-16*t],[x+20,y-37-18*t],[x+69,y-16-9*t]],'#fffdf1',2.5);
   for(let j=0;j<5;j++){const u=j/4,fx=x-32+u*98,fy=y-32-15*t+u*u*17,drop=13+(j%3)*7+t*8;poly([[fx-7,fy-2],[fx+4,fy-5],[fx+8,fy+drop*.42],[fx+3,fy+drop],[fx-1,fy+drop*.36]],p.foam);circle(fx+10,fy+drop+4,1.5+j%2,'#fffdf1')}
