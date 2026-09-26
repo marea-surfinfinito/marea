@@ -19,3 +19,12 @@ html,body,#game{height:100dvh}#game:fullscreen,#game:-webkit-full-screen{width:1
 
 /* Portrait game view: crop the wide world around the surfer without stretching it. */
 @media (orientation:portrait) and (max-width:800px){#rotate{display:none}#game{display:block}canvas{position:absolute;top:0;left:calc(22vw - 54.166667dvh);width:177.777778dvh;height:100dvh;max-width:none;max-height:none}.overlay{inset:0}.panel{max-height:calc(100dvh - 20px);padding:12px 10px}.panel h1{font-size:clamp(48px,14vw,72px)}.byline{margin-bottom:9px}.characters{width:96vw}.boards{width:96vw}.panel p{font-size:12px;line-height:1.35}.fullscreen-button{left:auto;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom))}}
+
+/* Intro controls dialog. */
+#howToPlay{z-index:5;background:rgba(7,8,29,.82)}
+.instructions-panel{width:min(92vw,480px);padding:25px;background:#14283f;border:2px solid #baf0ce;box-shadow:7px 7px 0 #ff5198;text-align:left}
+.instructions-panel h2{margin:8px 0 18px;color:#fff2cf;font:900 clamp(28px,5vw,42px) Arial Black,Impact,sans-serif;letter-spacing:.03em}
+.instructions-panel p{margin:12px 0;font-size:clamp(14px,2vw,17px);line-height:1.45}
+.instructions-panel strong{color:#baf0ce}
+.instructions-panel .instructions-extra{font-size:13px;color:#c9d9e2}
+.instructions-panel #playButton{display:block;margin:23px auto 0}
