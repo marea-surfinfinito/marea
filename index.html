@@ -1,4 +1,78 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071729"><title>Juegos del fin de los tiempos</title><meta name="description" content="Juegos de Nacho Martínez: Marea y Descenso."><style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#071729;color:#e9f4ec;font-family:Arial,Helvetica,sans-serif}main{max-width:1160px;margin:auto;padding:clamp(24px,5vw,70px)}header{display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid #557378;padding-bottom:22px}header span{font:700 13px monospace;letter-spacing:.23em;color:#86d9cd}header small{font-size:13px;color:#a9c3c3}h1{font-size:clamp(48px,9vw,112px);line-height:.92;letter-spacing:-.07em;margin:clamp(60px,11vw,130px) 0 22px;max-width:850px}h1 em{font-style:normal;color:#6dd2c6}p.lead{font-size:clamp(17px,2vw,23px);color:#a8c7cb;max-width:620px;line-height:1.5;margin:0 0 65px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.card{position:relative;min-height:410px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:30px;border:1px solid #4b747e;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s}.card:hover,.card:focus-visible{transform:translateY(-5px);border-color:#c7f1df;outline:none}.marea{background:radial-gradient(ellipse at 70% 70%,#2db6b6 0%,#194b73 38%,#142043 70%,#121935 100%)}.descenso{background:radial-gradient(ellipse at 55% -10%,#467f89 0%,#123e55 36%,#071927 74%,#030e1a 100%)}.card:after{content:"";position:absolute;inset:auto -10% 12% -10%;height:46%;border-top:2px solid #a8e6de55;border-radius:50%;transform:rotate(-7deg);pointer-events:none}.descenso:after{inset:25% -20% auto;height:90%;border-top:0;border-bottom:1px solid #8fd5cd44;border-radius:50%;transform:rotate(20deg)}.num,.action{font:700 13px monospace;letter-spacing:.14em;color:#b9eee1}.card h2{font-size:clamp(42px,6vw,78px);line-height:1;margin:0 0 12px;letter-spacing:-.06em}.card p{font-size:17px;line-height:1.45;color:#d3e6e7;max-width:380px}.action{display:inline-block;margin-top:20px}footer{padding:38px 0 10px;color:#83a6aa;font-size:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}.card{min-height:340px}header small{display:none}h1{margin-top:75px}p.lead{margin-bottom:42px}}
-</style></head><body><main><header><span>JUEGOS DEL FIN DE LOS TIEMPOS</span><small>CREADOS POR NACHOMMMARTINEZ</small></header><h1>Entra en<br><em>otro mundo.</em></h1><p class="lead">Dos formas de perder la noción del tiempo. Elige una y entra directamente a jugar.</p><div class="grid"><a class="card marea" href="./marea/"><span class="num">01 / SUPERFICIE</span><div><h2>MAREA</h2><p>Surfea una ola infinita. Salta, gira y vuelve a intentarlo.</p><span class="action">JUGAR →</span></div></a><a class="card descenso" href="./descenso/"><span class="num">02 / PROFUNDIDAD</span><div><h2>DESCENSO</h2><p>Explora un océano que nace a tu alrededor. Sin prisa, sin final.</p><span class="action">SUMERGIRSE →</span></div></a></div><footer>Una colección abierta de juegos.</footer></main></body></html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#100d2b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./marea-icon.svg">
+  <meta name="description" content="MAREA — juego de surf creado por nachommmartinez.">
+  <title>MAREA — surf infinito</title>
+  <link rel="stylesheet" href="./style.css?v=18">
+</head>
+<body>
+  <main id="game" aria-label="MAREA, juego de surf creado por nachommmartinez">
+    <canvas id="screen" width="1280" height="720" aria-label="Ola y surfista"></canvas>
+    <div id="start" class="overlay">
+      <div class="panel">
+        <div class="eyebrow">SURF INFINITO</div>
+        <h1>MAREA</h1>
+        <div class="byline">CREADO POR NACHOMMMARTINEZ</div>
+        <div class="choose-title">ELIGE SURFISTA</div>
+        <div class="characters" role="group" aria-label="Elegir surfista">
+          <button class="character selected" type="button" data-character="0" aria-pressed="true"><img class="portrait-art" src="./portraits/rubio.svg?v=8" alt="" width="74" height="82"><strong>RUBIO</strong><small>OJOS TURQUESA</small></button>
+          <button class="character" type="button" data-character="1" aria-pressed="false"><img class="portrait-art" src="./portraits/punk.svg?v=7" alt="" width="74" height="82"><strong>PUNK</strong><small>OJOS LIMA</small></button>
+          <button class="character" type="button" data-character="2" aria-pressed="false"><img class="portrait-art" src="./portraits/atlas.svg?v=7" alt="" width="74" height="82"><strong>ATLAS</strong><small>OJOS ÁMBAR</small></button>
+          <button class="character" type="button" data-character="3" aria-pressed="false"><img class="portrait-art" src="./portraits/yuna.svg?v=7" alt="" width="74" height="82"><strong>YUNA</strong><small>OJOS CIELO</small></button>
+        </div>
+        <div class="choose-title board-title">ELIGE TABLA</div>
+        <div class="boards" role="group" aria-label="Elegir tabla">
+          <button type="button" data-board="0" aria-pressed="true" aria-label="Tabla rosa"><span class="board-swatch" style="--board:#f368a5"></span><span>ROSA</span></button>
+          <button type="button" data-board="1" aria-pressed="false" aria-label="Tabla turquesa"><span class="board-swatch" style="--board:#38c9c6"></span><span>TURQUESA</span></button>
+          <button type="button" data-board="2" aria-pressed="false" aria-label="Tabla dorada"><span class="board-swatch" style="--board:#edb65d"></span><span>DORADA</span></button>
+          <button type="button" data-board="3" aria-pressed="false" aria-label="Tabla violeta"><span class="board-swatch" style="--board:#a68be8"></span><span>VIOLETA</span></button>
+        </div>
+        <span class="small rotate-hint"><svg class="rotate-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="11" y="8" width="10" height="16" rx="2" transform="rotate(-35 16 16)"/><path d="M7 8a12 12 0 0 1 18 3"/><path d="m25 6 1 5-5-1"/></svg><span>Para una mejor experiencia, gira el móvil en horizontal.</span></span>
+        <button id="startButton" type="button">ENTRAR AL AGUA</button>
+      </div>
+    </div>
+    <div id="howToPlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="howToPlayTitle">
+      <div class="panel instructions-panel">
+        <div class="eyebrow">ANTES DE SURFEAR</div>
+        <h2 id="howToPlayTitle">CÓMO JUGAR</h2>
+        <p><strong>Toque breve:</strong> salta sobre las rocas.</p>
+        <p><strong>Mantén pulsado:</strong> el surfista gira en el aire. Suelta a tiempo para aterrizar el backflip.</p>
+        <p class="instructions-extra">También puedes usar <strong>Espacio</strong>. Cada 100 metros ganas puntos; toca pájaros blancos y aterriza backflips para sumar más.</p>
+        <button id="playButton" type="button">¡A SURFEAR!</button>
+      </div>
+    </div>
+    <div id="gameOver" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+      <div class="panel scores-panel">
+        <div class="eyebrow">FIN DE LA OLA</div>
+        <h2 id="gameOverTitle">RÉCORDS</h2>
+        <p id="finalScore"></p>
+        <form id="scoreForm" class="score-form hidden">
+          <label for="initials">TUS INICIALES · 3 LETRAS</label>
+          <div><input id="initials" type="text" minlength="3" maxlength="3" pattern="[A-Za-z]{3}" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-label="Tres iniciales"><button type="submit">GUARDAR</button></div>
+          <p id="scoreSaveStatus" class="score-save-status" role="status" aria-live="polite"></p>
+        </form>
+        <div class="score-saved-message hidden" id="scoreSavedMessage" role="status"></div>
+        <ol id="highscores" aria-label="Diez mejores puntuaciones"></ol>
+        <button id="replayButton" type="button">OTRA OLA</button>
+        <button id="changeCharacterButton" type="button">CAMBIAR SURFISTA</button>
+      </div>
+    </div>
+    <button id="fullscreenButton" class="fullscreen-button hidden" type="button" aria-label="Activar pantalla completa">⛶ PANTALLA COMPLETA</button>
+    <button id="soundButton" class="sound" type="button" aria-label="Silenciar música">♫</button>
+    <div id="fullscreenTip" class="fullscreen-tip hidden" role="status"></div>
+  </main>
+  <audio id="music" src="./audio/marea_ambient.ogg" preload="auto" loop></audio>
+  <audio id="musicNight" src="./audio/marea_noche.ogg" preload="auto" loop></audio>
+  <audio id="musicStorm" src="./audio/marea_tormenta.ogg" preload="auto" loop></audio>
+  <script src="./game.js?v=40" defer></script>
+</body>
+</html>
