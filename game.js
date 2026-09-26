@@ -24,7 +24,7 @@ const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
 const seed=i=>((Math.sin(i*127.1+17.3)*43758.5453)%1+1)%1;
 const hex=h=>h[0]==='#'?[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)):h.match(/\d+/g).slice(0,3).map(Number);
 const rgb=(a,b,t)=>{const A=hex(a),B=hex(b);return `rgb(${A.map((v,i)=>Math.round(mix(v,B[i],t))).join(',')})`};
-const GIANT_START=12000,GIANT_SPACING=15600;
+const GIANT_START=7600,GIANT_SPACING=12000;
 function giantIndex(p){return Math.max(0,Math.round((p-GIANT_START)/GIANT_SPACING))}
 function giantDistance(p){return p-(GIANT_START+GIANT_SPACING*giantIndex(p))}
 function giantCore(p){const d=giantDistance(p)/380;return Math.exp(-2*d*d)}
@@ -55,6 +55,7 @@ function waterBell(g,frequency,volume,time){
  envelope.gain.setValueAtTime(.0001,time);envelope.gain.exponentialRampToValueAtTime(Math.max(.0002,volume),time+.026);envelope.gain.exponentialRampToValueAtTime(.0001,time+1.85);
  osc.connect(envelope);envelope.connect(master);envelope.connect(echo);osc.start(time);shimmer.start(time);osc.stop(time+1.9);shimmer.stop(time+1.9)
 }
+function giantCue(){if(!audioGraph||music.muted)return;const g=audioGraph,t=g.ac.currentTime;waterBell(g,220,.075,t);waterBell(g,329.63,.062,t+.13);waterBell(g,440,.055,t+.28)}
 function updateAudio(p,dt){
  const phase=p.phase,storm=p.rain,night=p.night,nightMix=smooth((phase-.8)/.8)*(1-smooth((phase-2.6)/.5)),weights=[Math.max(0,1-nightMix-storm),nightMix,storm],flourish=clamp(s.giantSuccess/2.5,0,1),duck=(1-.86*p.giant*(1-flourish))*(1-.75*p.calm);
  if(!audioGraph){tracks.forEach((track,i)=>track.volume=music.muted?0:.32*weights[i]*duck);return}
@@ -65,7 +66,7 @@ function updateAudio(p,dt){
  const dusk=smooth((phase-.75)/.3)*(1-smooth((phase-1.8)/.3)),notes=[110-12*dusk-28*night-37*storm,164.81-18*dusk-41*night-54*storm];
  pads.forEach(({osc,gain},i)=>{osc.frequency.setTargetAtTime(notes[i]*(1+flourish*.04),t,1.4);gain.gain.setTargetAtTime((i?.012:.018)*(1+night*.55+storm*.25+flourish*.9)*duck,t,.5)});
  rainGain.gain.setTargetAtTime(storm*.045,t,.5);
- g.oceanGain.gain.setTargetAtTime(p.giant*(1-flourish)*.3+p.calm*.013,t,.35);
+ const rush=clamp((s.speed-385)/295,0,1);g.oceanGain.gain.setTargetAtTime(p.giant*(1-flourish)*.3+p.calm*.013+rush*.028,t,.35);
  const stage=Math.floor(phase),step=Math.floor(s.clock*1.6);
  if(step!==g.melodyStep){
   g.melodyStep=step;
@@ -82,7 +83,7 @@ function loadScores(){try{const data=JSON.parse(localStorage.getItem('marea.high
 let highScores=loadScores();
 function renderScores(newEntry){if(!scoreList)return;scoreList.replaceChildren();for(let i=0;i<10;i++){const item=document.createElement('li'),entry=highScores[i];if(entry){const name=document.createElement('span'),points=document.createElement('span');name.textContent=entry.name;points.textContent=String(entry.score).padStart(5,'0');item.append(name,points);if(entry===newEntry)item.classList.add('new')}else{item.classList.add('empty');item.textContent='···'}scoreList.appendChild(item)}}
 function showGameOver(){if(!gameOver)return;document.getElementById('finalScore').textContent=`${s.score} PUNTOS · ${Math.floor(s.distance)} METROS`;const qualifies=highScores.length<10||s.score>highScores[9].score||s.score===highScores[9].score&&s.distance>highScores[9].distance;scoreForm.classList.toggle('hidden',!qualifies);initials.value='';renderScores();gameOver.classList.remove('hidden');if(qualifies)initials.focus()}
-function reset(){s={world:0,speed:370,boostTime:0,airY:0,airV:0,angle:0,spin:0,airborne:false,holding:false,jumpWindup:0,launchSplash:0,launchWorld:0,landingSplash:0,landingWorld:0,crashed:false,crashTime:0,distance:0,nextMilestone:100,score:0,combo:0,clock:0,pose:0,tuck:0,grab:0,landing:0,giantSuccess:0,giantRewarded:-1,lastRock:-1,rockBounce:0,rockBounceWorld:0,birdsCollected:new Set(),birdSpark:0,birdSparkY:0,displayY:0,displayAngle:0,wake:[],wakeTimer:0,message:'PÁJAROS BLANCOS · +1000',messageTime:5};s.displayY=surfaceY(X);gameOver?.classList.add('hidden')}
+function reset(){s={world:0,speed:370,boostTime:0,airY:0,airV:0,angle:0,spin:0,airborne:false,holding:false,jumpWindup:0,launchSplash:0,launchWorld:0,landingSplash:0,landingWorld:0,crashed:false,crashTime:0,distance:0,nextMilestone:100,score:0,combo:0,clock:0,pose:0,tuck:0,grab:0,landing:0,giantSuccess:0,giantRewarded:-1,lastRock:-1,rockBounce:0,rockBounceWorld:0,birdsCollected:new Set(),birdSpark:0,birdSparkY:0,cameraY:0,displayY:0,displayAngle:0,wake:[],wakeTimer:0,message:'PÁJAROS BLANCOS · +1000',messageTime:5};s.displayY=surfaceY(X);gameOver?.classList.add('hidden')}
 function stormLevel(world){const p=((world/2600)%4+4)%4;return p<2.7?0:p<3?smooth((p-2.7)/.3):p<3.7?1:1-smooth((p-3.7)/.3)}
 function top(x){const p=s.world+x,section=Math.floor(p/1000),storm=stormLevel(s.world),calm=calmLevel(s.world);let y=520+18*Math.sin(p*.003)+storm*24*Math.sin(p*.006);for(let offset=-1;offset<=1;offset++){const i=section+offset,q=seed(i),width=(270+180*seed(i+71))*(1+storm*.1),center=i*1000+500+140*(q-.5),d=(p-center)/width;y-=(145+205*q+storm*(70+100*q))*Math.exp(-2*d*d)}return Math.max(75,mix(y+(6+storm*10)*Math.sin(p*.018),475,calm*.76)-215*giantCore(p))}
 function depth(x){return 345+(520-top(x))*.23+15*Math.sin((s.world+x)*.006)+stormLevel(s.world)*25}
@@ -119,7 +120,7 @@ function step(dt){s.clock+=dt;s.pose=mix(s.pose,s.holding?1:0,clamp(dt*5,0,1));s
  if(s.wakeTimer>.085&&!s.airborne){s.wakeTimer=0;const glow=nightLevel(s.world);if(glow>.08)s.wake.push({world:s.world+X,life:3,night:glow})}
  while(s.distance>=s.nextMilestone){s.score+=100;s.message=`${s.nextMilestone} METROS · +100`;s.messageTime=2;s.nextMilestone+=100}
  if(s.jumpWindup>0){s.jumpWindup-=dt;if(s.jumpWindup<=0&&!s.airborne)jump()}
- if(s.airborne){s.airY+=s.airV*dt;s.airV+=710*dt;if(s.holding){s.angle-=5.2*dt;s.spin=Math.min(s.spin,s.angle)}else{const target=Math.round(s.angle/TAU)*TAU;s.angle=mix(s.angle,target,clamp(dt*5,0,1))}rockCollision();if(s.crashed)return;const target=surfaceY(X);if(s.airV>0&&s.airY>=target){const tilt=Math.atan(slopeAt(X))*.5,alignment=Math.abs(((s.angle-tilt+Math.PI)%TAU+TAU)%TAU-Math.PI);if(alignment<1.05){s.airborne=false;s.airY=target;s.airV=0;s.angle=tilt;s.landing=1;s.landingSplash=.65;s.landingWorld=s.world+X;const turns=Math.round(-s.spin/TAU);if(turns>0){s.combo++;s.score+=250*turns*s.combo;s.boostTime=Math.min(7,4.2+turns*.8);s.message=`¡${turns} BACKFLIP! · IMPULSO ×${s.combo}`;s.messageTime=2.5;s.speed=Math.min(680,s.speed+105*turns);const event=giantIndex(s.world+X);if(giantCore(s.world+X)>.2&&s.giantRewarded!==event){s.giantRewarded=event;s.giantSuccess=2.8;s.score+=1000;s.message='¡GRAN OLA! · BACKFLIP +1000';s.messageTime=3}}}else wipeout()}if(s.airY>H+80&&!s.crashed)wipeout()}
+ if(s.airborne){s.airY+=s.airV*dt;s.airV+=710*dt;if(s.holding){s.angle-=5.2*dt;s.spin=Math.min(s.spin,s.angle)}else{const target=Math.round(s.angle/TAU)*TAU;s.angle=mix(s.angle,target,clamp(dt*5,0,1))}rockCollision();if(s.crashed)return;const target=surfaceY(X);if(s.airV>0&&s.airY>=target){const tilt=Math.atan(slopeAt(X))*.5,alignment=Math.abs(((s.angle-tilt+Math.PI)%TAU+TAU)%TAU-Math.PI);if(alignment<1.05){s.airborne=false;s.airY=target;s.airV=0;s.angle=tilt;s.landing=1;s.landingSplash=.65;s.landingWorld=s.world+X;const turns=Math.round(-s.spin/TAU);if(turns>0){s.combo++;s.score+=250*turns*s.combo;s.boostTime=Math.min(7,4.2+turns*.8);s.message=`¡${turns} BACKFLIP! · IMPULSO ×${s.combo}`;s.messageTime=2.5;s.speed=Math.min(680,s.speed+105*turns);const event=giantIndex(s.world+X);if(giantCore(s.world+X)>.2&&s.giantRewarded!==event){s.giantRewarded=event;s.giantSuccess=2.8;s.score+=1000;s.message='¡GRAN OLA! · BACKFLIP +1000';s.messageTime=3;giantCue()}}}else wipeout()}if(s.airY>H+80&&!s.crashed)wipeout()}
  else{const slope=slopeAt(X),momentum=s.boostTime>0?85*s.boostTime/5:0;s.speed=clamp(s.speed+((385+momentum-s.speed)*(s.boostTime>0?.13:.38)+slope*150)*dt,290,680)}
  if(!s.crashed){rockCollision();if(!s.crashed)birdCollision()}
 }
@@ -251,17 +252,17 @@ function drawImpact(world,time,duration,p,landing){if(time<=0)return;const x=wor
  line([[x-spread,y+12],[x-spread*.52,y-4-progress*15],[x,y-9-progress*19],[x+spread*.5,y-3-progress*13],[x+spread,y+12]],p.foam,landing?4:3);
  for(let i=0;i<9;i++){const side=i%2?-1:1,dx=side*(9+i*5+progress*30),dy=(i%3)*7+progress*(24+i*2);circle(x+dx,y-dy,1.5+(i%3)*.8,p.foam)}ctx.globalAlpha=1}
 function render(){
- const p=weather();background(p);wave(p);drawRocks(p);drawWhiteBirds(p);drawWake();drawImpact(s.launchWorld,s.launchSplash,.55,p,false);drawImpact(s.landingWorld,s.landingSplash,.65,p,true);if(s.rockBounce>0){const x=s.rockBounceWorld-s.world,y=top(x)-31,t=1-s.rockBounce/.55;ctx.globalAlpha=(1-t)*.85;line([[x-30-t*22,y+12],[x-15-t*14,y-5-t*15],[x,y-14-t*23],[x+14+t*13,y-4-t*16],[x+30+t*22,y+12]],p.foam,3);for(const side of [-1,1])circle(x+side*(18+t*31),y-13-t*19,2.8,p.foam);ctx.globalAlpha=1}let y=s.displayY;
- if(!s.airborne&&!s.crashed){const glow=clamp(.2+s.combo*.13+s.boostTime*.09+s.giantSuccess*.2,.2,.95),trail=[],dark=rgb('#d12a72','#32ffe2',p.night),light=rgb('#ff96b6','#abffed',p.night);
-  for(let j=0;j<(s.boostTime>0?26:19);j++){const x=X-20-j*18;trail.push([x,top(x)+31+3*Math.sin(s.world*.024+j)])}
-  ctx.globalAlpha=glow*.35;line(trail,dark,9);ctx.globalAlpha=glow;line(trail,light,3.5);
-  for(let i=0;i<15;i++){const x=X-30-i*21,yy=top(x)+24-(i*13)%14;ctx.globalAlpha=glow*(.25+(i%3)*.16);circle(x,yy,1.5+(i%3),rgb('#ffeaf5','#c7fff4',p.night))}
+ const p=weather();background(p);ctx.save();ctx.translate(0,s.cameraY);wave(p);drawRocks(p);drawWhiteBirds(p);drawWake();drawImpact(s.launchWorld,s.launchSplash,.55,p,false);drawImpact(s.landingWorld,s.landingSplash,.65,p,true);if(s.rockBounce>0){const x=s.rockBounceWorld-s.world,y=top(x)-31,t=1-s.rockBounce/.55;ctx.globalAlpha=(1-t)*.85;line([[x-30-t*22,y+12],[x-15-t*14,y-5-t*15],[x,y-14-t*23],[x+14+t*13,y-4-t*16],[x+30+t*22,y+12]],p.foam,3);for(const side of [-1,1])circle(x+side*(18+t*31),y-13-t*19,2.8,p.foam);ctx.globalAlpha=1}let y=s.displayY;
+ if(!s.airborne&&!s.crashed){const rush=clamp((s.speed-385)/295,0,1),glow=clamp(.2+s.combo*.13+s.boostTime*.09+s.giantSuccess*.2+rush*.35,.2,.95),trail=[],dark=rgb('#d12a72','#32ffe2',p.night),light=rgb('#ff96b6','#abffed',p.night);
+  for(let j=0;j<19+Math.round(rush*28);j++){const x=X-20-j*18;trail.push([x,top(x)+31+3*Math.sin(s.world*.024+j)])}
+  ctx.globalAlpha=glow*.35;line(trail,dark,9+rush*7);ctx.globalAlpha=glow;line(trail,light,3.5+rush*2);
+  for(let i=0;i<15+Math.round(rush*10);i++){const x=X-30-i*21,yy=top(x)+24-(i*13)%14;ctx.globalAlpha=glow*(.25+(i%3)*.16);circle(x,yy,1.5+(i%3),rgb('#ffeaf5','#c7fff4',p.night))}
   ctx.globalAlpha=.12;circle(X,y+12,20+s.landing*22,p.foam);ctx.globalAlpha=1
  }
- surfer(s.crashed?Math.min(y+s.crashTime*160,H+50):y,s.crashed?1.1+s.crashTime*3:s.displayAngle);
+ surfer(s.crashed?Math.min(y+s.crashTime*160,H+50):y,s.crashed?1.1+s.crashTime*3:s.displayAngle);ctx.restore();
  if(p.rain){ctx.fillStyle=`rgba(31,54,79,${.14*p.rain})`;ctx.fillRect(0,0,W,H);for(let i=0;i<95;i++){const x=((i*157-s.clock*155)%(W+70)+(W+70))%(W+70)-35,y=((i*89+s.clock*(490+(i%4)*80))%(H+90)+(H+90))%(H+90)-45;line([[x,y],[x-8,y+20]],`rgba(195,225,245,${.36*p.rain})`,1.5)}}hud();momentumHud()
 }
-let last=performance.now();function frame(now){const delta=Math.min((now-last)/1000,.10);last=now;if(!start.classList.contains('hidden')){render();requestAnimationFrame(frame);return}let remaining=delta;while(remaining>.00001){const dt=Math.min(remaining,1/120);step(dt);remaining-=dt}const target=s.airborne?s.airY:surfaceY(X);s.displayY=mix(s.displayY,s.crashed?s.displayY:target,1-Math.exp(-delta*17));const tilt=Math.atan((surfaceY(X+14)-surfaceY(X-14))/28)*.52,desired=s.airborne?s.angle:tilt;const difference=((desired-s.displayAngle+Math.PI)%TAU+TAU)%TAU-Math.PI;s.displayAngle+=difference*(1-Math.exp(-delta*19));render();updateAudio(weather(),delta);requestAnimationFrame(frame)}
+let last=performance.now();function frame(now){const delta=Math.min((now-last)/1000,.10);last=now;if(!start.classList.contains('hidden')){render();requestAnimationFrame(frame);return}let remaining=delta;while(remaining>.00001){const dt=Math.min(remaining,1/120);step(dt);remaining-=dt}const target=s.airborne?s.airY:surfaceY(X);s.displayY=mix(s.displayY,s.crashed?s.displayY:target,1-Math.exp(-delta*17));const tilt=Math.atan((surfaceY(X+14)-surfaceY(X-14))/28)*.52,desired=s.airborne?s.angle:tilt;const difference=((desired-s.displayAngle+Math.PI)%TAU+TAU)%TAU-Math.PI;s.displayAngle+=difference*(1-Math.exp(-delta*19));const cameraTarget=giantPresence(s.world+X)*clamp((245-top(X))*.46,0,95);s.cameraY=mix(s.cameraY,cameraTarget,1-Math.exp(-delta*3.5));render();updateAudio(weather(),delta);requestAnimationFrame(frame)}
 reset();requestAnimationFrame(frame);
 const characterButtons=[...document.querySelectorAll('[data-character]')];
 function chooseCharacter(index){characterIndex=index;characterButtons.forEach((button,i)=>{button.classList.toggle('selected',i===index);button.setAttribute('aria-pressed',i===index?'true':'false')});try{localStorage.setItem('marea.character.v1',String(index))}catch{}}
