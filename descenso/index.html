@@ -1,6 +1,6 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071924"><title>Descenso — prototipo</title><style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071924;color:#e9f6ef;font-family:Arial,sans-serif}canvas{display:block}#app{position:fixed;inset:0;touch-action:none}.top{position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;right:16px;display:flex;justify-content:space-between;align-items:start;pointer-events:none}.top a,.top button{pointer-events:auto;color:#daf0eb;background:#0a2b3b99;border:1px solid #82bcb9;padding:9px 12px;text-decoration:none;font:700 12px monospace;letter-spacing:.1em}.top .right{text-align:right}.readout{font:12px/1.7 monospace;letter-spacing:.12em;text-shadow:0 2px 8px #001}.intro{position:fixed;inset:0;display:grid;place-items:center;background:#03111bc9;padding:24px;text-align:center}.intro.hidden{display:none}.intro>div{max-width:550px}.eyebrow{font:12px monospace;letter-spacing:.3em;color:#9ee0d4}h1{font-size:clamp(62px,13vw,120px);letter-spacing:-.07em;margin:14px 0}.intro p{font-size:17px;line-height:1.5;color:#c5dedb}.intro button{font:700 14px monospace;letter-spacing:.12em;background:#b7e7d8;color:#0a2432;border:0;padding:17px 24px;margin:20px}.intro small{display:block;color:#a9cecb;line-height:1.6}.controls{position:fixed;left:14px;right:14px;bottom:max(16px,env(safe-area-inset-bottom));display:none;justify-content:space-between;pointer-events:none}.controls div{display:flex;gap:7px;align-items:end}.controls button{pointer-events:auto;touch-action:none;user-select:none;width:55px;height:55px;border:1px solid #b5e8df;background:#0d4156ae;color:white;font:24px Arial}.controls .vertical{display:grid;gap:7px}@media(pointer:coarse){.controls{display:flex}}#error{position:fixed;bottom:20px;left:20px;right:20px;color:#fff;background:#542a36;padding:16px;display:none}
-</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script></head><body><div id="app"></div><div class="top"><a href="../juegos/">← JUEGOS</a><div class="right"><div class="readout"><span id="depth">0 M</span><br><span id="coordinates"></span></div><button id="sound" aria-label="Silenciar sonido">SONIDO ♫</button> <button id="newSea" title="Crear otro océano">OTRO MAR</button></div></div><div class="controls"><div><button data-key="left" aria-label="Girar a la izquierda">↶</button><button data-key="forward" aria-label="Nadar hacia delante">↑</button><button data-key="right" aria-label="Girar a la derecha">↷</button></div><div class="vertical"><button data-key="up" aria-label="Ascender">＋</button><button data-key="down" aria-label="Descender">−</button></div></div><div class="intro" id="intro"><div><span class="eyebrow">OCÉANO PROCEDURAL · VERSIÓN DE DESARROLLO</span><h1>DESCENSO</h1><p>Una inmersión sin objetivos ni tiempo límite. Cada mar nace de una semilla distinta. Nada, escucha y déjate llevar.</p><button id="start">SUMERGIRSE</button><small>W / ↑ avanzar · A D / ← → girar · Espacio subir · S / ↓ bajar<br>Arrastra la pantalla para mirar · Controles táctiles en móvil</small></div></div><div id="error">Este dispositivo no puede abrir la escena 3D.</div><script type="module">
+</style><script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script></head><body><div id="app"></div><div class="top"><a href="https://marea-surfinfinito.github.io/marea/juegos/">← JUEGOS</a><div class="right"><div class="readout"><span id="depth">0 M</span><br><span id="coordinates"></span></div><button id="sound" aria-label="Silenciar sonido">SONIDO ♫</button> <button id="newSea" title="Crear otro océano">OTRO MAR</button></div></div><div class="controls"><div><button data-key="left" aria-label="Girar a la izquierda">↶</button><button data-key="forward" aria-label="Nadar hacia delante">↑</button><button data-key="right" aria-label="Girar a la derecha">↷</button></div><div class="vertical"><button data-key="up" aria-label="Ascender">＋</button><button data-key="down" aria-label="Descender">−</button></div></div><div class="intro" id="intro"><div><span class="eyebrow">OCÉANO PROCEDURAL · VERSIÓN DE DESARROLLO</span><h1>DESCENSO</h1><p>Una inmersión sin objetivos ni tiempo límite. Cada mar nace de una semilla distinta. Nada, escucha y déjate llevar.</p><button id="start">SUMERGIRSE</button><small>W / ↑ avanzar · A D / ← → girar · Espacio subir · S / ↓ bajar<br>Arrastra la pantalla para mirar · Controles táctiles en móvil</small></div></div><div id="error">Este dispositivo no puede abrir la escena 3D.</div><script type="module">
 import * as THREE from 'three';
 const app=document.querySelector('#app'),depthEl=document.querySelector('#depth'),coords=document.querySelector('#coordinates'),intro=document.querySelector('#intro'),keys=new Set();let seed=(Math.random()*4294967295)>>>0,started=false,last=0,time=0,lookPitch=-.1;const CHUNK=90,GRID=18,RADIUS=2,chunks=new Map(),fish=[],bubbles=[];const p={x:0,y:-14,z:0,heading:0,speed:0,vy:0,turn:0};const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
 function hash(a,b=0){let h=(Math.imul(a|0,374761393)+Math.imul(b|0,668265263)+seed)>>>0;h=Math.imul(h^h>>>13,1274126177);return ((h^h>>>16)>>>0)/4294967296}
@@ -12,7 +12,69 @@ const groundMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,si
 const rockGeo=new THREE.DodecahedronGeometry(1,0),fishGeo=new THREE.ConeGeometry(.35,1.5,3),bubbleGeo=new THREE.SphereGeometry(.15,6,5),kelpGeo=new THREE.PlaneGeometry(1,1);
 function makeChunk(cx,cz){const group=new THREE.Group(),positions=[],colors=[],indices=[],col=new THREE.Color();for(let j=0;j<=GRID;j++)for(let i=0;i<=GRID;i++){let x=cx*CHUNK+i*CHUNK/GRID,z=cz*CHUNK+j*CHUNK/GRID,y=height(x,z);positions.push(x,y,z);let d=clamp((-y-42)/100,0,1),v=noise(x/13,z/13);col.setRGB(.13+v*.1-d*.05,.34+v*.1-d*.09,.34+v*.08-d*.05);colors.push(col.r,col.g,col.b)}for(let j=0;j<GRID;j++)for(let i=0;i<GRID;i++){let a=j*(GRID+1)+i,b=a+GRID+1;indices.push(a,b,a+1,b,b+1,a+1)}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();group.add(new THREE.Mesh(geo,groundMat));const dummy=new THREE.Object3D(),rocks=new THREE.InstancedMesh(rockGeo,rockMat,35),kelps=new THREE.InstancedMesh(kelpGeo,kelpMat,90);for(let i=0;i<35;i++){let x=(cx+hash(cx*341+i,cz*79))*CHUNK,z=(cz+hash(cx*73,cz*131+i))*CHUNK,y=height(x,z),s=1+hash(i+cx,cz)*2;dummy.position.set(x,y+s*.4,z);dummy.rotation.set(0,hash(i,cz)*6,0);dummy.scale.set(s*1.4,s*.55,s);dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix)}rocks.instanceMatrix.needsUpdate=true;group.add(rocks);for(let i=0;i<90;i++){let x=(cx+hash(cx*137+i,cz*53))*CHUNK,z=(cz+hash(cx*53,cz*91+i))*CHUNK,y=height(x,z),h=2+hash(i+cx*7,cz)*9;dummy.position.set(x,y+h*.5,z);dummy.rotation.set(0,hash(i,cz)*6,0);dummy.scale.set(.5+hash(i,cz)*.9,h,1);dummy.updateMatrix();kelps.setMatrixAt(i,dummy.matrix)}kelps.instanceMatrix.needsUpdate=true;group.add(kelps);scene.add(group);return{group,geo,rocks,kelps}}
 function updateChunks(){let cx=Math.floor(p.x/CHUNK),cz=Math.floor(p.z/CHUNK);for(let dz=-RADIUS;dz<=RADIUS;dz++)for(let dx=-RADIUS;dx<=RADIUS;dx++){let x=cx+dx,z=cz+dz,key=x+','+z;if(!chunks.has(key))chunks.set(key,makeChunk(x,z))}for(const[key,c]of chunks){let[x,z]=key.split(',').map(Number);if(Math.abs(x-cx)>RADIUS||Math.abs(z-cz)>RADIUS){scene.remove(c.group);c.geo.dispose();c.rocks.dispose();c.kelps.dispose();chunks.delete(key)}}}
-diver=new THREE.Group();const suit=new THREE.MeshStandardMaterial({color:0xe8b360,roughness:.75}),dark=new THREE.MeshStandardMaterial({color:0x173a47,roughness:.7}),mask=new THREE.MeshStandardMaterial({color:0xc4ebdc,metalness:.3,roughness:.2});const body=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.5,4,8),dark);body.rotation.x=Math.PI/2;diver.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.58,10,8),suit);head.position.z=-1.18;diver.add(head);const visor=new THREE.Mesh(new THREE.BoxGeometry(.73,.29,.12),mask);visor.position.set(0,.12,-1.7);diver.add(visor);const tank=new THREE.Mesh(new THREE.CylinderGeometry(.27,.27,1.3,8),suit);tank.rotation.x=Math.PI/2;tank.position.set(0,.61,.24);diver.add(tank);for(const side of [-1,1]){let arm=new THREE.Mesh(new THREE.CapsuleGeometry(.17,1.1,3,6),dark);arm.rotation.x=Math.PI/2;arm.position.set(side*.72,-.15,-.25);diver.add(arm)}finL=new THREE.Group();finR=new THREE.Group();for(const[side,g]of [[-1,finL],[1,finR]]){g.position.set(side*.3,-.22,.9);let leg=new THREE.Mesh(new THREE.CapsuleGeometry(.19,1,3,6),dark);leg.rotation.x=Math.PI/2;leg.position.z=.55;g.add(leg);let fin=new THREE.Mesh(new THREE.BoxGeometry(.36,.1,.85),suit);fin.position.z=1.28;g.add(fin);diver.add(g)}scene.add(diver);
+diver=new THREE.Group();
+const neoprene=new THREE.MeshStandardMaterial({color:0x10191e,roughness:.86}),
+      turquoise=new THREE.MeshStandardMaterial({color:0x16aeb2,roughness:.62}),
+      turquoiseDark=new THREE.MeshStandardMaterial({color:0x087c88,roughness:.72}),
+      glass=new THREE.MeshStandardMaterial({color:0x8bdcda,metalness:.32,roughness:.12,transparent:true,opacity:.8}),
+      rubber=new THREE.MeshStandardMaterial({color:0x051117,roughness:.9}),
+      skin=new THREE.MeshStandardMaterial({color:0xb78870,roughness:.85});
+// A long, narrow silhouette, seen mainly from behind by the following camera.
+const body=new THREE.Mesh(new THREE.CapsuleGeometry(.43,1.35,6,12),neoprene);
+body.rotation.x=Math.PI/2;body.scale.set(.86,.82,1);diver.add(body);
+const panel=new THREE.Mesh(new THREE.BoxGeometry(.48,.065,1.25),turquoise);
+panel.position.set(0,.37,-.15);diver.add(panel);
+const spine=new THREE.Mesh(new THREE.BoxGeometry(.105,.07,1.32),neoprene);
+spine.position.set(0,.415,-.16);diver.add(spine);
+const hood=new THREE.Mesh(new THREE.SphereGeometry(.48,14,10),neoprene);
+hood.position.set(0,0,-1.24);diver.add(hood);
+const face=new THREE.Mesh(new THREE.SphereGeometry(.33,12,8),skin);
+face.scale.set(1,.62,.42);face.position.set(0,-.025,-1.66);diver.add(face);
+const maskFrame=new THREE.Mesh(new THREE.BoxGeometry(.72,.32,.18),rubber);
+maskFrame.position.set(0,.11,-1.69);diver.add(maskFrame);
+const lenses=new THREE.Mesh(new THREE.BoxGeometry(.6,.23,.06),glass);
+lenses.position.set(0,.12,-1.8);diver.add(lenses);
+const strap=new THREE.Mesh(new THREE.BoxGeometry(.9,.105,.18),turquoiseDark);
+strap.position.set(0,.14,-1.25);diver.add(strap);
+// Snorkel follows the right side of the black hood and rises above it.
+const tubeCurve=new THREE.CatmullRomCurve3([
+ new THREE.Vector3(.42,-.13,-1.75),new THREE.Vector3(.58,.02,-1.65),
+ new THREE.Vector3(.56,.36,-1.42),new THREE.Vector3(.52,.72,-1.36)
+]);
+const snorkel=new THREE.Mesh(new THREE.TubeGeometry(tubeCurve,20,.065,7,false),turquoise);
+diver.add(snorkel);
+const snorkelTip=new THREE.Mesh(new THREE.CylinderGeometry(.085,.085,.13,8),rubber);
+snorkelTip.position.set(.52,.76,-1.36);diver.add(snorkelTip);
+const tank=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,1.3,10),rubber);
+tank.rotation.x=Math.PI/2;tank.position.set(0,.68,.08);diver.add(tank);
+for(const side of [-1,1]){
+ const strap=new THREE.Mesh(new THREE.BoxGeometry(.12,.09,.9),turquoise);
+ strap.position.set(side*.3,.49,-.18);diver.add(strap);
+ const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.125,1.07,4,8),neoprene);
+ arm.rotation.x=Math.PI/2;arm.position.set(side*.58,-.09,-.37);diver.add(arm);
+ const glove=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),turquoiseDark);
+ glove.position.set(side*.58,-.1,.35);diver.add(glove);
+}
+finL=new THREE.Group();finR=new THREE.Group();
+for(const[side,g]of [[-1,finL],[1,finR]]){
+ g.position.set(side*.24,-.18,.72);
+ const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.155,1.2,4,8),neoprene);
+ leg.rotation.x=Math.PI/2;leg.position.z=.6;g.add(leg);
+ const stripe=new THREE.Mesh(new THREE.BoxGeometry(.085,.045,.85),turquoise);
+ stripe.position.set(side*.14,.13,.62);g.add(stripe);
+ const boot=new THREE.Mesh(new THREE.BoxGeometry(.31,.22,.55),neoprene);
+ boot.position.z=1.35;g.add(boot);
+ const bladeShape=new THREE.Shape();
+ bladeShape.moveTo(-.18,0);bladeShape.lineTo(.18,0);
+ bladeShape.lineTo(.34,1.5);bladeShape.quadraticCurveTo(0,1.7,-.34,1.5);
+ bladeShape.closePath();
+ const blade=new THREE.Mesh(new THREE.ShapeGeometry(bladeShape),turquoise);
+ blade.rotation.x=Math.PI/2;blade.position.set(0,-.11,1.5);g.add(blade);
+ const rail=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,1.35),rubber);
+ rail.position.set(0,-.07,2.22);g.add(rail);
+ diver.add(g);
+}
+scene.add(diver);
 const fishGeo2=new THREE.ConeGeometry(.22,.9,3);fishGeo2.rotateX(Math.PI/2);for(let i=0;i<90;i++){let f=new THREE.Mesh(fishGeo2,fishMat);f.userData={i,phase:hash(i,1)*7};fish.push(f);scene.add(f)}for(let i=0;i<65;i++){let b=new THREE.Mesh(bubbleGeo,bubbleMat);b.userData={i,phase:hash(i,5)*60};bubbles.push(b);scene.add(b)}
 const particleGeo=new THREE.BufferGeometry(),dust=[];for(let i=0;i<300;i++)dust.push((hash(i,1)-.5)*130,(hash(i,2)-.5)*80,(hash(i,3)-.5)*130);particleGeo.setAttribute('position',new THREE.Float32BufferAttribute(dust,3));particles=new THREE.Points(particleGeo,new THREE.PointsMaterial({color:0xb9dace,size:.13,transparent:true,opacity:.35}));scene.add(particles);
 function key(k){return({ArrowUp:'forward',w:'forward',W:'forward',ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right',Space:'up',' ':'up',ArrowDown:'down',s:'down',S:'down'})[k]}
