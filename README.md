@@ -6,6 +6,6 @@ Elige entre cuatro surfistas de cabeza esférica, ojos de colores y peinados dis
 
 Toca la pantalla o pulsa Espacio para saltar. Mantén para hacer un backflip y suelta para aterrizar alineado con la ola. Al aterrizar una vuelta completa, el surfista gana inercia. Cada 100 metros otorgan 100 puntos, cada backflip suma puntos por combo y la Gran Ola ofrece una bonificación. Las diez mejores puntuaciones se guardan con tres iniciales en `localStorage`.
 
-Las olas son procedimentales; crecen con la tormenta. El clima alterna día, atardecer, noche y lluvia. Delfines saltan en el fondo y tortugas aparecen bajo el agua. Tres pistas musicales originales se mezclan según el clima, acompañadas por sonidos procedimentales.
+Las rocas sobresalen entre las olas y hay que saltarlas. Las olas son procedimentales; crecen con la tormenta. El clima alterna día, atardecer, noche y lluvia. Delfines saltan en el fondo y tortugas aparecen bajo el agua. Tres pistas musicales originales se mezclan según el clima, acompañadas por sonidos procedimentales.
 
 La web es estática y no necesita bibliotecas externas. Para probarla localmente, sirve este directorio con un servidor HTTP y abre `index.html`.
