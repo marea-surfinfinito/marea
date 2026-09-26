@@ -3,7 +3,7 @@
 const W=1280,H=720,X=390,TAU=Math.PI*2;
 const canvas=document.getElementById('screen'),ctx=canvas.getContext('2d',{alpha:false});
 const music=document.getElementById('music'),tracks=[music,document.getElementById('musicNight'),document.getElementById('musicStorm')].filter(Boolean),start=document.getElementById('start'),sound=document.getElementById('soundButton');
-const gameOver=document.getElementById('gameOver'),scoreForm=document.getElementById('scoreForm'),scoreList=document.getElementById('highscores'),initials=document.getElementById('initials');
+const howToPlay=document.getElementById('howToPlay'),gameOver=document.getElementById('gameOver'),scoreForm=document.getElementById('scoreForm'),scoreList=document.getElementById('highscores'),initials=document.getElementById('initials');
 const C={ink:'#101028',cream:'#ffe8a3',pink:'#ff5198',mint:'#baf0ce',teal:'#28cfc8'};
 const SKIN='#c98d79',SUIT='#14283f';
 const BLOND='#e9bf73',BLOND_SHADOW='#ba8848';
@@ -265,7 +265,7 @@ function render(){
  surfer(s.crashed?Math.min(y+s.crashTime*160,H+50):y,s.crashed?1.1+s.crashTime*3:s.displayAngle);ctx.restore();
  if(p.rain){ctx.fillStyle=`rgba(31,54,79,${.14*p.rain})`;ctx.fillRect(0,0,W,H);for(let i=0;i<95;i++){const x=((i*157-s.clock*155)%(W+70)+(W+70))%(W+70)-35,y=((i*89+s.clock*(490+(i%4)*80))%(H+90)+(H+90))%(H+90)-45;line([[x,y],[x-8,y+20]],`rgba(195,225,245,${.36*p.rain})`,1.5)}}hud();momentumHud()
 }
-let last=performance.now();function frame(now){const delta=Math.min((now-last)/1000,.10);last=now;if(!start.classList.contains('hidden')){render();requestAnimationFrame(frame);return}let remaining=delta;while(remaining>.00001){const dt=Math.min(remaining,1/120);step(dt);remaining-=dt}const target=s.airborne?s.airY:surfaceY(X);s.displayY=mix(s.displayY,s.crashed?s.displayY:target,1-Math.exp(-delta*17));const tilt=Math.atan((surfaceY(X+14)-surfaceY(X-14))/28)*.52,desired=s.airborne?s.angle:tilt;const difference=((desired-s.displayAngle+Math.PI)%TAU+TAU)%TAU-Math.PI;s.displayAngle+=difference*(1-Math.exp(-delta*19));const cameraTarget=giantPresence(s.world+X)*clamp((245-top(X))*.46,0,95);s.cameraY=mix(s.cameraY,cameraTarget,1-Math.exp(-delta*3.5));render();updateAudio(weather(),delta);requestAnimationFrame(frame)}
+let last=performance.now();function frame(now){const delta=Math.min((now-last)/1000,.10);last=now;if(!start.classList.contains('hidden')||!howToPlay.classList.contains('hidden')){render();requestAnimationFrame(frame);return}let remaining=delta;while(remaining>.00001){const dt=Math.min(remaining,1/120);step(dt);remaining-=dt}const target=s.airborne?s.airY:surfaceY(X);s.displayY=mix(s.displayY,s.crashed?s.displayY:target,1-Math.exp(-delta*17));const tilt=Math.atan((surfaceY(X+14)-surfaceY(X-14))/28)*.52,desired=s.airborne?s.angle:tilt;const difference=((desired-s.displayAngle+Math.PI)%TAU+TAU)%TAU-Math.PI;s.displayAngle+=difference*(1-Math.exp(-delta*19));const cameraTarget=giantPresence(s.world+X)*clamp((245-top(X))*.46,0,95);s.cameraY=mix(s.cameraY,cameraTarget,1-Math.exp(-delta*3.5));render();updateAudio(weather(),delta);requestAnimationFrame(frame)}
 reset();requestAnimationFrame(frame);
 const characterButtons=[...document.querySelectorAll('[data-character]')];
 function chooseCharacter(index){characterIndex=index;characterButtons.forEach((button,i)=>{button.classList.toggle('selected',i===index);button.setAttribute('aria-pressed',i===index?'true':'false')});try{localStorage.setItem('marea.character.v1',String(index))}catch{}}
@@ -288,8 +288,9 @@ mobileLandscape.addEventListener?.('change',onMobileRotation);
 window.addEventListener('orientationchange',()=>setTimeout(onMobileRotation,100));
 fullscreenButton?.addEventListener('click',()=>requestGameFullscreen());
 onMobileRotation();
-function enter(){start.classList.add('hidden');syncFullscreen();tracks.forEach(track=>track.volume=0);setupAudio();tracks.forEach(track=>track.play().catch(()=>{}));last=performance.now()}
+function enter(){start.classList.add('hidden');howToPlay.classList.remove('hidden');document.getElementById('playButton').focus();syncFullscreen();tracks.forEach(track=>track.volume=0);setupAudio();tracks.forEach(track=>track.play().catch(()=>{}));last=performance.now()}
 document.getElementById('startButton').addEventListener('click',enter);
+document.getElementById('playButton').addEventListener('click',()=>{howToPlay.classList.add('hidden');document.getElementById('playButton').blur();last=performance.now()});
 scoreForm?.addEventListener('submit',e=>{e.preventDefault();const name=initials.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(name.length!==3){initials.setCustomValidity('Escribe tres letras');initials.reportValidity();return}initials.setCustomValidity('');const entry={name,score:s.score,distance:Math.floor(s.distance)};highScores.push(entry);highScores.sort((a,b)=>b.score-a.score||b.distance-a.distance);highScores=highScores.slice(0,10);try{localStorage.setItem('marea.highscores.v1',JSON.stringify(highScores))}catch{}scoreForm.classList.add('hidden');renderScores(entry)});
 initials?.addEventListener('input',()=>{initials.value=initials.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);initials.setCustomValidity('')});
 document.getElementById('replayButton')?.addEventListener('click',reset);
@@ -297,7 +298,7 @@ document.getElementById('changeCharacterButton')?.addEventListener('click',()=>{
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.setPointerCapture(e.pointerId);hold(true)});
 canvas.addEventListener('pointerup',e=>{e.preventDefault();hold(false)});
 canvas.addEventListener('pointercancel',()=>hold(false));
-window.addEventListener('keydown',e=>{if(!gameOver?.classList.contains('hidden')||document.activeElement===initials)return;if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(!e.repeat)hold(true)}});
+window.addEventListener('keydown',e=>{if(!gameOver?.classList.contains('hidden')||!howToPlay.classList.contains('hidden')||document.activeElement===initials)return;if(e.code==='Space'||e.code==='Enter'){e.preventDefault();if(!e.repeat)hold(true)}});
 window.addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='Enter'){e.preventDefault();hold(false)}});
 window.addEventListener('blur',()=>hold(false));
 sound.addEventListener('click',e=>{e.stopPropagation();music.muted=!music.muted;tracks.forEach(track=>track.muted=music.muted);sound.classList.toggle('muted',music.muted);sound.textContent=music.muted?'♪̸':'♫';sound.setAttribute('aria-label',music.muted?'Activar música':'Silenciar música');if(!music.muted)tracks.forEach(track=>{if(track.paused)track.play().catch(()=>{})})});
