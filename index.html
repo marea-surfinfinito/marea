@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="./marea-icon.svg">
   <meta name="description" content="MAREA — juego de surf creado por nachommmartinez.">
   <title>MAREA — surf infinito</title>
-  <link rel="stylesheet" href="./style.css?v=17">
+  <link rel="stylesheet" href="./style.css?v=18">
 </head>
 <body>
   <main id="game" aria-label="MAREA, juego de surf creado por nachommmartinez">
@@ -57,7 +57,9 @@
         <form id="scoreForm" class="score-form hidden">
           <label for="initials">TUS INICIALES · 3 LETRAS</label>
           <div><input id="initials" type="text" minlength="3" maxlength="3" pattern="[A-Za-z]{3}" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-label="Tres iniciales"><button type="submit">GUARDAR</button></div>
+          <p id="scoreSaveStatus" class="score-save-status" role="status" aria-live="polite"></p>
         </form>
+        <div class="score-saved-message hidden" id="scoreSavedMessage" role="status"></div>
         <ol id="highscores" aria-label="Diez mejores puntuaciones"></ol>
         <button id="replayButton" type="button">OTRA OLA</button>
         <button id="changeCharacterButton" type="button">CAMBIAR SURFISTA</button>
@@ -70,6 +72,6 @@
   <audio id="music" src="./audio/marea_ambient.ogg" preload="auto" loop></audio>
   <audio id="musicNight" src="./audio/marea_noche.ogg" preload="auto" loop></audio>
   <audio id="musicStorm" src="./audio/marea_tormenta.ogg" preload="auto" loop></audio>
-  <script src="./game.js?v=39" defer></script>
+  <script src="./game.js?v=40" defer></script>
 </body>
 </html>
