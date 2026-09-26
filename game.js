@@ -272,13 +272,19 @@ boardButtons.forEach(button=>button.addEventListener('click',()=>chooseBoard(Num
 characterButtons.forEach(button=>button.addEventListener('click',()=>chooseCharacter(Number(button.dataset.character))));chooseCharacter(characterIndex);
 const fullscreenButton=document.getElementById('fullscreenButton'),fullscreenTip=document.getElementById('fullscreenTip');
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const mobileLandscape=window.matchMedia('(orientation: landscape) and (pointer: coarse)');
 function isStandalone(){return window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone}
-function syncFullscreen(){const active=Boolean(document.fullscreenElement||document.webkitFullscreenElement||isStandalone());fullscreenButton?.classList.toggle('hidden',active||isIOS||!start.classList.contains('hidden'));if(active)fullscreenTip?.classList.add('hidden')}
-function showFullscreenTip(){if(!fullscreenTip)return;fullscreenTip.textContent=isIOS?'En iPhone o iPad: Compartir → Añadir a pantalla de inicio. Después abre MAREA desde su icono.':'Si estás en un navegador integrado, abre MAREA en Chrome desde el menú ⋮. También puedes añadirla a la pantalla de inicio.';fullscreenTip.classList.remove('hidden');syncFullscreen();setTimeout(()=>fullscreenTip.classList.add('hidden'),11000)}
-async function requestGameFullscreen(){if(isStandalone()){syncFullscreen();return}const target=document.getElementById('game'),request=target.requestFullscreen||target.webkitRequestFullscreen;if(!request){showFullscreenTip();return}try{await request.call(target);syncFullscreen();try{await screen.orientation?.lock?.('landscape')}catch{}}catch{showFullscreenTip()}}
+function syncFullscreen(){const active=Boolean(document.fullscreenElement||document.webkitFullscreenElement||isStandalone());fullscreenButton?.classList.toggle('hidden',active||isIOS||(!mobileLandscape.matches&&!start.classList.contains('hidden')));if(active)fullscreenTip?.classList.add('hidden')}
+function showFullscreenTip(){if(!fullscreenTip)return;fullscreenTip.textContent=isIOS?'En iPhone o iPad: Compartir → Añadir a pantalla de inicio. Después abre MAREA desde su icono.':'Si el navegador bloquea pantalla completa, abre MAREA en Chrome desde el menú ⋮ o añádela a la pantalla de inicio.';fullscreenTip.classList.remove('hidden');syncFullscreen();setTimeout(()=>fullscreenTip.classList.add('hidden'),11000)}
+async function requestGameFullscreen(silent=false){if(isStandalone()){syncFullscreen();return}const target=document.getElementById('game'),request=target.requestFullscreen||target.webkitRequestFullscreen;if(!request){if(!silent)showFullscreenTip();syncFullscreen();return}try{await request.call(target);syncFullscreen();try{await screen.orientation?.lock?.('landscape')}catch{}}catch{if(!silent)showFullscreenTip();syncFullscreen()}}
+let wasMobileLandscape=false;
+function onMobileRotation(){const landscape=mobileLandscape.matches;if(landscape&&!wasMobileLandscape&&!isStandalone()&&!document.fullscreenElement)requestGameFullscreen(true);wasMobileLandscape=landscape;syncFullscreen()}
 document.addEventListener('fullscreenchange',syncFullscreen);
 document.addEventListener('webkitfullscreenchange',syncFullscreen);
-fullscreenButton?.addEventListener('click',requestGameFullscreen);
+mobileLandscape.addEventListener?.('change',onMobileRotation);
+window.addEventListener('orientationchange',()=>setTimeout(onMobileRotation,100));
+fullscreenButton?.addEventListener('click',()=>requestGameFullscreen());
+onMobileRotation();
 function enter(){start.classList.add('hidden');requestGameFullscreen();syncFullscreen();tracks.forEach(track=>track.volume=0);setupAudio();tracks.forEach(track=>track.play().catch(()=>{}));last=performance.now()}
 document.getElementById('startButton').addEventListener('click',enter);
 scoreForm?.addEventListener('submit',e=>{e.preventDefault();const name=initials.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);if(name.length!==3){initials.setCustomValidity('Escribe tres letras');initials.reportValidity();return}initials.setCustomValidity('');const entry={name,score:s.score,distance:Math.floor(s.distance)};highScores.push(entry);highScores.sort((a,b)=>b.score-a.score||b.distance-a.distance);highScores=highScores.slice(0,10);try{localStorage.setItem('marea.highscores.v1',JSON.stringify(highScores))}catch{}scoreForm.classList.add('hidden');renderScores(entry)});
