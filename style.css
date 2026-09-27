@@ -31,3 +31,5 @@ html,body,#game{height:100dvh}#game:fullscreen,#game:-webkit-full-screen{width:1
 
 .score-form .score-save-status{min-height:1.2em;margin:6px 0 0;color:#ffd5df;font:12px/1.35 Arial,sans-serif;letter-spacing:0}
 .score-saved-message{margin:8px 0;color:#baf0ce;font:bold 12px/1.4 monospace;letter-spacing:.08em}
+
+.language-button{position:absolute;z-index:3;right:70px;top:max(14px,env(safe-area-inset-top));height:42px;min-width:48px;padding:0 8px;border:1px solid rgba(255,255,255,.5);border-radius:2px;background:rgba(16,16,40,.66);color:#fff;font:700 14px monospace;letter-spacing:.08em}.language-button:hover,.language-button:focus-visible{background:#28cfc8;color:#101028;outline:2px solid #fff}
